@@ -95,7 +95,8 @@ def cart(request):
     # Get customer information.
     customer = request.user.customer
     # Save customer to order.
-    order, created = Order.objects.get_or_create(customer=customer, is_checkout=False)
+    order, created = Order.objects.get_or_create(
+        customer=customer, is_checkout=False)
     # Save product to cart.
     items = order.orderdetail_set.all()
 
@@ -145,11 +146,13 @@ def updatePasswordApi(request, format=None):
         user.set_password(new_password)
         user.save()
         return Response(
-            {"message": "Change password successfully!"}, status=status.HTTP_200_OK
+            {"message": "Change password successfully!"}, 
+            status=status.HTTP_200_OK
         )
     except:
         return Response(
-            {"error": "Something went wrong!"}, status=status.HTTP_400_BAD_REQUEST
+            {"error": "Something went wrong!"}, 
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -243,8 +246,14 @@ def addToCartApi(request):
     # Get product information.
     product = Product.objects.get(pk=productId)
     # Get or create new order.
-    order, created = Order.objects.get_or_create(customer=customer, is_checkout=False)
-    orderItem, created = OrderDetail.objects.get_or_create(order=order, product=product)
+    order, created = Order.objects.get_or_create(
+        customer=customer,
+        is_checkout=False
+    )
+    orderItem, created = OrderDetail.objects.get_or_create(
+        order=order, 
+        product=product
+    )
 
     # Check button action.
     if action == "add":
@@ -264,8 +273,16 @@ def addToCartApi(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def checkoutApi(request):
+    # JSON format for add: 
+    # {"province":Cần Thơ,
+    # "district":"Ninh Kiều",
+    # "ward":"Xuân Khánh",
+    # "address":"Đại học Cần Thơ"}
     # Get JSON data from request.
     data = json.loads(request.body)
+    province = data["province"]
+    district = data["district"]
+    ward = data["ward"]
     address = data["address"]
     # Get customer information
     customer = request.user.customer
@@ -274,7 +291,14 @@ def checkoutApi(request):
     order.is_checkout = True
     order.save()
     # Create new shipping.
-    ShippingAddress.objects.create(customer=customer, order=order, address=address)
+    ShippingAddress.objects.create(
+        customer=customer,
+        order=order,
+        province=province,
+        district=district,
+        ward=ward,
+        address=address,
+    )
     # Return JSON result.
     return Response({"message": "Create order successfully!"}, status=status.HTTP_200_OK)
 
@@ -306,3 +330,28 @@ def getAllOrderApi(request):
     orderSerializer = OrderSerializer(order, many=True)
     # Return JSON result.
     return Response(orderSerializer.data, status=status.HTTP_200_OK)
+
+
+# API function to middleware. Require login.
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def middleware(request):
+    return Response(status=status.HTTP_200_OK)
+
+
+# API function to update coordinate. Require login.
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def updateCoordinate(request, pk):
+    # Get upload data from request.
+    lattitude = request.data["lattitude"]
+    longtitude = request.data["longtitude"]
+    # Get order from database.
+    order = Order.objects.get(pk=pk)
+    # Update lattitude and longtitude.
+    order.lattitude = lattitude
+    order.longitude = longtitude
+    # Save order.
+    order.save()
+    # Return JSON result.
+    return Response({"message": "Order completed!"}, status=status.HTTP_200_OK)

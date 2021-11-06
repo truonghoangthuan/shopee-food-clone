@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
 # Create your models here.
 # Database table for category.
 class Category(models.Model):
@@ -15,6 +16,7 @@ class Product(models.Model):
     image = models.ImageField(upload_to="product-image/", blank=True)
     name = models.CharField(max_length=255)
     price = models.FloatField(default=0)
+    note = models.TextField(blank=True)
     description = models.TextField(blank=True)
     category = models.ManyToManyField(Category)
 
@@ -38,6 +40,8 @@ class Order(models.Model):
     date_ordered = models.DateTimeField(auto_now_add=True)
     is_checkout = models.BooleanField(default=False)
     is_delivered = models.BooleanField(default=False)
+    lattitude = models.CharField(max_length=255, null=True, blank=True)
+    longitude = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return str(self.id)
@@ -69,6 +73,9 @@ class OrderDetail(models.Model):
 class ShippingAddress(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True)
+    province = models.CharField(max_length=255, null=False)
+    district = models.CharField(max_length=255, null=False)
+    ward = models.CharField(max_length=255, null=False)
     address = models.CharField(max_length=255, null=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
