@@ -4,7 +4,7 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-
+from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -96,7 +96,7 @@ def cart(request):
     customer = request.user.customer
     # Save customer to order.
     order, created = Order.objects.get_or_create(
-        customer=customer, is_checkout=False)
+        customer = customer, is_checkout = False)
     # Save product to cart.
     items = order.orderdetail_set.all()
 
@@ -131,7 +131,7 @@ def registerUserApi(request):
                 user=user, full_name=full_name, phone_number=phone_number
             )
         # Return JSON result.
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'msg':'Created'}, status=status.HTTP_201_CREATED)
     # Return JSON errors.
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -201,9 +201,9 @@ def addProductsApi(request):
 @permission_classes([IsAuthenticated])
 def editProductsApi(request, pk):
     # Get product with given pk
-    product = Product.objects.get(pk=pk)
+    product = Product.objects.get(pk = pk)
     # Serialize data for the response.
-    productSerializer = ProductSerializer(instance=product, data=request.data)
+    productSerializer = ProductSerializer(instance = product, data = request.data)
     # Save product to database if valid.
     if productSerializer.is_valid():
         productSerializer.save()
@@ -218,16 +218,19 @@ def editProductsApi(request, pk):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def cartApi(request):
-    # Get customer information.
-    customer = request.user.customer
-    # Save customer to order.
-    order, created = Order.objects.get_or_create(customer=customer, is_checkout=False)
-    # Save product to cart.
-    items = order.orderdetail_set.all()
-    # Serialize data for the respone.
-    orderDetailSerializer = OrderDetailSerializer(items, many=True)
-    # Return JSON result.
-    return Response(orderDetailSerializer.data, status=status.HTTP_200_OK)
+    customer = request.user
+    instanceOrder = Order.objects.filter(customer = customer, is_delivered = False)
+    if len(instanceOrder) > 0:
+        orderDetails = instanceOrder[0].orderdetail_set.all()
+        orderSerializer = OrderSerializer(instanceOrder[0])
+        serializer = OrderDetailSerializer(orderDetails, many = True)
+        print(orderDetails)
+        context = {
+            'order': orderSerializer.data,
+            'items': serializer.data
+        }
+        return Response(context, status = status.HTTP_200_OK)
+    return Response({'msg': 'NOT FOUND'}, status = status.HTTP_400_BAD_REQUEST)
 
 
 # API function to add product to cart. Require login.
@@ -237,22 +240,22 @@ def addToCartApi(request):
     # JSON format for add: {"productId":1,"action":"add"}
     # JSON format for remove: {"productId":1,"action":"remove"}
     # Get JSON data from request.
-    data = json.loads(request.body)
-    productId = data["productId"]
+    data = request.data
+    productId = data["product_id"]
     action = data["action"]
 
     # Get customer information
-    customer = request.user.customer
+    customer = request.user
     # Get product information.
-    product = Product.objects.get(pk=productId)
+    product = Product.objects.get(pk = productId)
     # Get or create new order.
     order, created = Order.objects.get_or_create(
-        customer=customer,
-        is_checkout=False
+        customer = customer,
+        is_checkout = False
     )
     orderItem, created = OrderDetail.objects.get_or_create(
-        order=order, 
-        product=product
+        order = order, 
+        product = product
     )
 
     # Check button action.
@@ -273,34 +276,35 @@ def addToCartApi(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def checkoutApi(request):
-    # JSON format for add: 
-    # {"province":Cần Thơ,
-    # "district":"Ninh Kiều",
-    # "ward":"Xuân Khánh",
-    # "address":"Đại học Cần Thơ"}
-    # Get JSON data from request.
-    data = json.loads(request.body)
-    province = data["province"]
-    district = data["district"]
-    ward = data["ward"]
-    address = data["address"]
+    data = request.data
+    lattitude = data['lattitude']
+    longitude = data['longitude']
+    cast = data['cast']
     # Get customer information
-    customer = request.user.customer
+    customer = request.user
     # Update checkout status for order.
-    order = Order.objects.get(customer=customer, is_checkout=False)
+    order = Order.objects.get(customer = customer, is_checkout = False)
     order.is_checkout = True
+    order.lattitude = lattitude
+    order.longitude = longitude
+    order.cast = cast
     order.save()
     # Create new shipping.
     ShippingAddress.objects.create(
-        customer=customer,
-        order=order,
-        province=province,
-        district=district,
-        ward=ward,
-        address=address,
+        customer = customer,
+        order = order,
+        longitude = '106.62965',
+        lattitude = '10.82302'
     )
+    orderSerializer = OrderSerializer(order)
+    orderDetails = order.orderdetail_set.all()
+    orderDetailsSerializer = OrderDetailSerializer(orderDetails, many = True)
+    context = {
+        'order': orderSerializer.data,
+        'items': orderDetailsSerializer.data
+    }
     # Return JSON result.
-    return Response({"message": "Create order successfully!"}, status=status.HTTP_200_OK)
+    return Response(context, status = status.HTTP_200_OK)
 
 
 # API function to confirm received order of customer. Require login.
@@ -308,9 +312,9 @@ def checkoutApi(request):
 @permission_classes([IsAuthenticated])
 def confirmReceivedOrderApi(request, pk):
     # Get customer information
-    customer = request.user.customer
+    customer = request.user
     # Get order.
-    order = Order.objects.get(pk=pk, customer=customer)
+    order = Order.objects.get(pk = pk, customer = customer)
     # Update is_checkout status for order.
     order.is_delivered = True
     order.save()
@@ -323,9 +327,9 @@ def confirmReceivedOrderApi(request, pk):
 @permission_classes([IsAuthenticated])
 def getAllOrderApi(request):
     # Get customer information
-    customer = request.user.customer
+    customer = request.user
     # Get order.
-    order = Order.objects.all().filter(customer=customer)
+    order = Order.objects.all().filter(customer = customer)
     # Serialize data for the respone.
     orderSerializer = OrderSerializer(order, many=True)
     # Return JSON result.
@@ -355,3 +359,135 @@ def updateCoordinate(request, pk):
     order.save()
     # Return JSON result.
     return Response({"message": "Order completed!"}, status=status.HTTP_200_OK)
+
+
+class ProductView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format = None):
+        categoryId = request.query_params.get('id')
+        instanceCategory = Category.objects.filter(id = categoryId)
+        if len(instanceCategory) > 0:
+            products = instanceCategory[0].product_set.all()
+            serializer = ProductSerializer(products, many = True)
+            return Response(serializer.data, status = status.HTTP_200_OK)
+        return Response({'msg': 'Not found'}, status = status.HTTP_400_BAD_REQUEST)
+    
+    
+class CustomerView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format = None):
+        instanceUser = request.user
+        serializer = CustomerSerializer(instanceUser)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+    
+    def post(self, request, format = None):
+        password = request.data['password']
+        instanceUser = request.user
+        serializer = CustomerSerializer(instanceUser, data = request.data)
+        if serializer.is_valid():
+            serializer.save()
+            instanceUser.set_password(password)
+            instanceUser.save()
+            return Response({'msg': 'Updated'}, status = status.HTTP_200_OK)
+        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+    
+    
+class InstanceAddressView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format = None):
+        user = request.user
+        orders = user.order_set.filter(is_delivered = False)
+        print(orders[0])
+        if len(orders) > 0:
+            shippingAddress = orders[0].shippingaddress_set.all()
+            if len(shippingAddress) > 0:
+                serializer = ShippingAddressSerializer(shippingAddress[0])
+                return Response(serializer.data, status = status.HTTP_200_OK)
+        return Response({'msg': 'NOT FOUND'}, status = status.HTTP_400_BAD_REQUEST)
+    
+    
+class DeliveredOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format = None):
+        user = request.user
+        deliveredOrder = user.order_set.filter(is_delivered = True)
+        if len(deliveredOrder) > 0:
+            serializer = OrderSerializer(deliveredOrder, many = True)
+            return Response(serializer.data, status = status.HTTP_200_OK)
+        return Response({'msg': 'ERROR'}, status = status.HTTP_400_BAD_REQUEST)
+    
+    
+class ReOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, format = None):
+        user = request.user
+        instanceOrder = Order.objects.filter(customer = user, is_delivered = False)
+        if len(instanceOrder) == 0:
+            reOrderId = request.data['order_id']
+            reOrder = Order.objects.filter(id = reOrderId)
+            if len(reOrder) > 0:
+                newOrder = Order.objects.create(
+                    customer = user,
+                    date_ordered = reOrder[0].date_ordered,
+                    is_checkout = False,
+                    is_delivered = False,
+                    cast = 0.0,
+                    lattitude = '',
+                    longitude = ''
+                )
+                reOrderDetail = reOrder[0].orderdetail_set.all() 
+                for orderDetail in reOrderDetail:
+                    OrderDetail.objects.create(
+                        product = orderDetail.product,
+                        order = newOrder,
+                        quantity = orderDetail.quantity,
+                        date_added = orderDetail.date_added
+                    )
+                orderSerializer = OrderSerializer(newOrder)
+                orderDetails = newOrder.orderdetail_set.all()  
+                serializer = OrderDetailSerializer(orderDetails, many = True)    
+                context = {
+                    'order': orderSerializer.data,
+                    'items': serializer.data
+                }
+            return Response(context, status = status.HTTP_200_OK)
+        return Response({'msg': 'Error'}, status = status.HTTP_400_BAD_REQUEST)
+    
+    
+class OrderUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, format = None):
+        orderDetailId = request.data['order_detail_id']
+        statusTmp = request.data['status']
+        customer = request.user
+        instanceOrderDetail = OrderDetail.objects.filter(id = orderDetailId)
+        if len(instanceOrderDetail) > 0:
+            orderDetail = instanceOrderDetail[0]
+            # 1 == "+"
+            if statusTmp == 1:
+                orderDetail.quantity = orderDetail.quantity + 1
+                orderDetail.save()
+            if statusTmp == 2:
+                orderDetail.quantity = orderDetail.quantity - 1
+                orderDetail.save()
+                if orderDetail.quantity <= 0:
+                    orderDetail.delete()
+            instanceOrder = Order.objects.filter(customer = customer, is_delivered = False)
+            if len(instanceOrder) > 0:
+                orderDetails = instanceOrder[0].orderdetail_set.all()
+                orderSerializer = OrderSerializer(instanceOrder[0])
+                serializer = OrderDetailSerializer(orderDetails, many = True)
+                print(orderDetails)
+                context = {
+                    'order': orderSerializer.data,
+                    'items': serializer.data
+                }
+                return Response(context, status = status.HTTP_200_OK)
+            return Response({'msg': 'NOT FOUND'}, status = status.HTTP_400_BAD_REQUEST)
+        return Response({'msg': 'not found'}, status = status.HTTP_400_BAD_REQUEST)

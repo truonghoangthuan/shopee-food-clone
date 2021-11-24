@@ -4,28 +4,73 @@ import {
     Footer
 } from '../Components';
 import {
-    blueColor
+    blueColor,
+    ipAddress
 } from '../contants';
+const axios = require('axios');
+const localStorage = require('local-storage');
 
 class Profile extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            name: 'Huỳnh Quan Nhật Hào',
-            password: 'hao152903',
-            phonenumber: '0932843656',
-            email: 'hao152903@gmail.com'
+            name: '',
+            password: null,
+            phonenumber: '',
+            email: ''
         }
         this.handleChangeInformation = this.handleChangeInformation.bind(this);
-        this.handleChangePhoneNumber = this.handleChangePhoneNumber.bind(this);
+        this.handleChangeInformation = this.handleChangeInformation.bind(this);
+    }
+
+    componentDidMount = () => {
+        this.getUserInformation();
+    }
+
+    getUserInformation = () => {
+        const token = localStorage.get('token');
+        axios.get(`${ipAddress}/api/customer-infor/`, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            }
+        })
+        .then((response) => {
+            console.log(response.data);
+            this.setState({
+                name: response.data.full_name,
+                phonenumber: response.data.phone_number,
+                email: response.data.email,
+            })
+        })
+        .catch((error) => {
+            console.log('Error');
+        })
     }
 
     handleChangeInformation = () => {
-        alert('Change');
-    }
-
-    handleChangePhoneNumber = () => {
-        alert('Change phonenumber');
+        if(this.state.password === null) {
+            alert('VUI LÒNG NHẬP MẬT KHẨU CẦN THAY ĐỔI!');
+        } else {
+            const token = localStorage.get('token');
+            axios.post(`${ipAddress}/api/customer-infor/`, {
+                full_name: this.state.name,
+                email: this.state.email,
+                phone_number: this.state.phonenumber,
+                password: this.state.password
+            } ,{
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            .then((response) => {
+                alert('CẬP NHẬT THÀNH CÔNG!');
+            })
+            .catch((error) => {
+                alert('CẬP NHẬT KHÔNG THÀNH KHÔNG!');
+            })
+        }
     }
 
     mainView = () => {
@@ -68,7 +113,7 @@ class Profile extends Component {
                             flexDirection: 'row',
                             alignItems: 'center'
                         }}> 
-                            <p style = {{marginRight: '133px', fontWeight: 'bold'}}>Tên</p>
+                            <p style = {{marginRight: '133px', fontWeight: 'bold'}}>Tên *</p>
                             <input type = 'text' value = {this.state.name} onChange = {(event) => {
                                 this.setState({
                                     name: event.target.value
@@ -85,7 +130,7 @@ class Profile extends Component {
                             flexDirection: 'row',
                             alignItems: 'center'
                         }}> 
-                            <p style = {{marginRight: '118px', fontWeight: 'bold'}}>Email</p>
+                            <p style = {{marginRight: '118px', fontWeight: 'bold'}}>Email *</p>
                             <input type = 'text' value = {this.state.email} onChange = {(event) => {
                                 this.setState({
                                     email: event.target.value
@@ -102,7 +147,7 @@ class Profile extends Component {
                             flexDirection: 'row',
                             alignItems: 'center'
                         }}> 
-                            <p style = {{marginRight: '88px', fontWeight: 'bold'}}>Mật khẩu</p>
+                            <p style = {{marginRight: '88px', fontWeight: 'bold'}}>Mật khẩu *</p>
                             <input type = 'password' value = {this.state.password} onChange = {(event) => {
                                 this.setState({
                                     password: event.target.value
@@ -116,8 +161,8 @@ class Profile extends Component {
                         </div>
                         <button onClick = {this.handleChangeInformation} style = {{
                             border: 'solid 0.5px grey',
-                            padding: '10px',
-                            borderRadius: '5px',
+                            padding: '15px',
+                            borderRadius: '20px',
                             backgroundColor: blueColor,
                             color: 'white',
                             height: '30px',
@@ -141,7 +186,7 @@ class Profile extends Component {
                             flexDirection: 'row',
                             alignItems: 'center'
                         }}> 
-                            <p style = {{marginRight: '60px', fontWeight: 'bold'}}>Số điện thoại</p>
+                            <p style = {{marginRight: '60px', fontWeight: 'bold'}}>Số điện thoại *</p>
                             <input type = 'text' value = {this.state.phonenumber} onChange = {(event) => {
                                 this.setState({
                                     phonenumber: event.target.value
@@ -155,8 +200,8 @@ class Profile extends Component {
                         </div>
                         <button onClick = {this.handleChangeInformation} style = {{
                                 border: 'solid 0.5px grey',
-                                padding: '10px',
-                                borderRadius: '5px',
+                                padding: '15px',
+                                borderRadius: '20px',
                                 backgroundColor: blueColor,
                                 color: 'white',
                                 height: '30px',

@@ -8,7 +8,8 @@ import tmpImage from '../assets/hamburger.jpg';
 import backgroundImg from '../assets/foodbackground.jpg';
 import {
     blueColor,
-    orangeColor
+    orangeColor,
+    ipAddress
 } from '../contants';
 import {
     Modal,
@@ -17,33 +18,41 @@ import {
 import {
     Link
 } from 'react-router-dom';
+const axios = require('axios');
+const localStorage = require('local-storage');
 
 class DoAn extends Component {
     constructor(props) {
         super(props);
         this.state = {
             listFoods: [
-                {
-                    'id': 1,
-                    'name': 'Mì xào giòn',
-                    'description': 'Ngon say lalalala',
-                    'categories:': 'Mì, thịt bò, bông cải xào',
-                    'price': 20000
-                },
-                {
-                    'id': 2,
-                    'name': 'Mì xào giòn',
-                    'description': 'Ngon say lalalala',
-                    'categories:': 'Mì, thịt bò, bông cải xào',
-                    'price': 40000
-                }
+                
             ],
             instanceFood: {}
         }
+        this.getProducts = this.getProducts.bind(this);
     }
 
     componentDidMount() {
+        this.getProducts();
+    }
 
+    getProducts = () => {
+        const token = localStorage.get('token');
+        axios.get(`${ipAddress}/api/product?id=1`, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            }
+        })
+        .then((response) => {
+            this.setState({
+                listFoods: response.data
+            })
+        })
+        .catch((error) => {
+            alert('CÓ LỖI TRONG QUÁ TRÌNH LẤY DỮ LIỆU!');
+        })
     }
 
     handleEndReached = () => {
@@ -90,6 +99,7 @@ class DoAn extends Component {
             );
         } else {
             const item = this.state.listFoods.map((item, index) => {
+                console.log(item.image)
                 return(
                     <div style = {{
                         height: '150px',
@@ -104,9 +114,11 @@ class DoAn extends Component {
                         display: 'flex',
                         flexDirection: 'row' 
                     }} key = {index}>
-                        <img src = {tmpImage} style = {{
+                        <img src = {`http://192.168.1.3:8000${item.image}`} style = {{
                             borderRadius: '10px',
-                            boxShadow: '2px 2px 2px #888888'
+                            boxShadow: '2px 2px 2px #888888',
+                            height: '100%',
+                            width: '200px'
                         }}></img>
 
                         {/* Information of food wrapper */}
@@ -114,14 +126,15 @@ class DoAn extends Component {
                             display: 'flex',
                             flexDirection: 'column',
                             marginLeft: '20px',
-                            padding: '10px'
+                            padding: '10px',
+                            width: '250px'
                         }}>
                             <p style = {{
                                 fontWeight: 'bold',
                                 fontSize: '20px'
                             }}>{item.name}</p>
-                            <p>{item.description}</p>
-                            <p>Thành phần: {item["categories:"]}</p>
+                            <p>{item.note}</p>
+                            <p>Thành phần: {item.description}</p>
                         </div>
                         <div style = {{
                             display: 'flex',

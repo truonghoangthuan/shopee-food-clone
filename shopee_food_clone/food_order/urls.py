@@ -1,21 +1,8 @@
-"""shopee_food_clone URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/3.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.conf import settings
+from django.conf.urls.static import static
 
 from . import views
 
@@ -29,9 +16,11 @@ urlpatterns = [
 
     path('api/register/', views.registerUserApi, name="api_register"),
     path('api/login/', TokenObtainPairView.as_view(), name="api_login"),
+    path('api/customer-infor/', views.CustomerView.as_view(), name = 'customer-information'),
     path('api/update-password/', views.updatePasswordApi, name="api_update_password"),
     path('api/get-all-products/', views.getAllProductsApi, name="api_get_all_products"),
     path('api/get-product/<int:pk>/', views.getProductApi, name="api_get_product"),
+    path('api/product/', views.ProductView.as_view(), name = 'products-by-category'),
     path('api/add-product/', views.addProductsApi, name="api_add_product"),
     path('api/edit-product/<int:pk>', views.editProductsApi, name="api_edit_product"),
     path('api/add-to-cart/', views.addToCartApi, name="api_add_to_cart"),
@@ -41,4 +30,8 @@ urlpatterns = [
     path('api/order-history/', views.getAllOrderApi, name="api_order_history"),
     path('api/middleware/', views.middleware, name="api_middleware"),
     path('api/update-coordinate/<int:pk>/', views.updateCoordinate, name="api_update_coordinate"),
-]
+    path('api/shipping-address/', views.InstanceAddressView.as_view(), name = 'shipping-address'),
+    path('api/delivered-orders/', views.DeliveredOrderView.as_view(), name = 'delivered-orders'),
+    path('api/re-order/', views.ReOrderView.as_view(), name = 're-order'),
+    path('api/order/', views.OrderUpdateView.as_view(), name = 'order')
+] + static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)

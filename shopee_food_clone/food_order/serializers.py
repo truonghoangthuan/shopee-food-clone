@@ -34,6 +34,17 @@ class CustomerCreationSerializer(serializers.ModelSerializer):
         return True
 
 
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = [
+            "full_name",
+            "email",
+            "password",
+            "phone_number",
+        ]
+        
+
 # Serializer for get product.
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,13 +56,14 @@ class ProductSerializer(serializers.ModelSerializer):
 class OrderDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderDetail
-        fields = [
+        fields =  [
             "id",
             "product",
             "order",
             "quantity",
             "date_added",
             "get_order_detail_total",
+            "name_of_product"
         ]
 
 
@@ -59,4 +71,10 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
+        fields = "__all__"
+
+
+class ShippingAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShippingAddress
         fields = "__all__"
