@@ -36,11 +36,38 @@ class OrderInstance extends Component {
             Longitude: null,
             totalCast: 0,
             loaded: false,
+            voucher: '',
+            applyingVoucher: null
         }
         this.handleGetOrder = this.handleGetOrder.bind(this);
         this.getDeliveredCoordinate = this.getDeliveredCoordinate.bind(this);
         this.getInformation = this.getInformation.bind(this);
         this.handleConfirmDelivered = this.handleConfirmDelivered.bind(this);
+        this.handleUseVoucher = this.handleUseVoucher.bind(this);
+    }
+
+    handleUseVoucher = () => {
+        const token = localStorage.get('token');
+        axios.get(`${ipAddress}/api/voucher?code=${this.state.voucher}`, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+            }
+        })
+        .then((response) => {
+            let tmpCast = (1 - Number(response.data.percentage)/100) * this.state.totalCast
+            this.setState({
+                totalCast: tmpCast,
+                applyingVoucher: this.state.voucher,
+                voucher: ''
+            });
+        })
+        .catch((error) => {
+            alert('Voucher không hợp lệ');
+            this.setState({
+                voucher: ''
+            })
+        })
     }
 
     getDeliveredCoordinate = () => {
@@ -116,7 +143,8 @@ class OrderInstance extends Component {
             axios.post(`${ipAddress}/api/checkout/`, {
                 lattitude: position.coords.latitude,
                 longitude: position.coords.longitude,
-                cast: totalCast
+                cast: totalCast,
+                voucher: this.state.applyingVoucher
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -255,7 +283,7 @@ class OrderInstance extends Component {
                                     <p>Tổng tiền: </p><p style = {{
                                         fontWeight: 'bold',
                                         marginLeft: '10px'
-                                    }}>70.000 vnđ</p>
+                                    }}>{this.state.instanceOrder.cast} vnđ</p>
                                 </div>
                                 <div style = {{
                                     display: 'flex',
@@ -506,6 +534,37 @@ class OrderInstance extends Component {
                                     marginBottom: '35px'
                                 }}>Chi tiết đơn hàng</p>
                                 {item}
+                                <div style = {{
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    backgroundColor: '#f2f2f2',
+                                    height: '30px',
+                                    marginTop: '10px',
+                                    padding: '5px',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <span style = {{
+                                        fontWeight: 'bold'
+                                    }}>Mã khuyến mãi</span>
+                                    <input style = {{
+                                        border: 'solid 0.5px grey',
+                                        borderRadius: '20px',
+                                        width: '150px',
+                                        padding: '5px'
+                                    }} onChange = {(event) => {
+                                        this.setState({
+                                            voucher: event.target.value
+                                        });
+                                    }}type = 'text' value = {this.state.voucher}></input>
+                                    <button style = {{
+                                        fontSize: '12px',
+                                        borderWidth: '0px',
+                                        backgroundColor: '#00e600',
+                                        borderRadius: '5px'
+                                    }} onClick = {() => {
+                                        this.handleUseVoucher();
+                                    }} >Áp dụng</button>
+                                </div>
                                 <div style = {{
                                     display: 'flex',
                                     flexDirection: 'row',

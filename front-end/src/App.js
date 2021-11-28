@@ -13,7 +13,8 @@ import {
     OrderInstance,
     DoAn,
     ThucPham,
-    Bia
+    Bia,
+    Voucher
 } from './Screens';
 import { ProtectedRoute } from './protected.route';
 
@@ -28,9 +29,8 @@ function App() {
                 <Route exact path = '/register'>
                     <Register />
                 </Route>
-                <Route exact path = '/profile'>
-                    <Profile />
-                </Route>
+                <ProtectedRoute exact path = '/profile' component = {Profile}>
+                </ProtectedRoute>
                 <ProtectedRoute exact path = '/history-order' component = {OrderHistory}>
                 </ProtectedRoute>
                 <ProtectedRoute exact path = '/detail/:id' component = {FoodDetail}>
@@ -42,6 +42,8 @@ function App() {
                 <ProtectedRoute exact path = '/thuc-pham' component = {ThucPham}>
                 </ProtectedRoute>
                 <ProtectedRoute exact path = '/bia' component = {Bia}>
+                </ProtectedRoute>
+                <ProtectedRoute exact path = '/voucher' component = {Voucher}>
                 </ProtectedRoute>
                 <Route path = "*" component = {() => {
                     return(

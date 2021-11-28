@@ -1,11 +1,11 @@
 import React, { Component } from "react";
 import {
     orangeColor,
-    fontSize,
     ipAddress
 } from '../contants';
 import {
     Link,
+    withRouter 
 } from "react-router-dom";
 import './css/register.css';
 import background from '../assets/login-background.jpg';
@@ -21,24 +21,23 @@ class Register extends Component {
             email: '',
             username: '',
             pass1: '',
-            pass2: ''
         }
         this.handleRegister = this.handleRegister.bind(this);
     }
 
     handleRegister = (event) => {
         event.preventDefault();
-        axios.post(`${ipAddress}/api/login/`, {
+        axios.post(`${ipAddress}/api/register/`, {
             full_name: this.state.name,
             username: this.state.username,
             email: this.state.email,
-            password1: this.state.pass1,
-            password2: this.state.pass2,
+            password: this.state.pass1,
             phone_number: this.state.phoneNumber
         })
         .then((response) => {
             alert('ĐĂNG KÝ TÀI KHOẢN THÀNH CÔNG');
-            this.props.history.push('/');
+            
+            this.props.history.push('/login');
         })
         .catch((error) => {
             alert('THÔNG TIN TÀI KHOẢN KHÔNG HỢP LỆ');
@@ -196,36 +195,9 @@ class Register extends Component {
                                         pass1: event.target.value
                                     });
                                 }}
+                                type = 'password'
                             ></input>
                         </div>   
-                        <div style = {{
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "center",
-                            marginBottom: '10px'
-                        }}>
-                            <div style = {{
-                                display: "flex",
-                                flexDirection: "row",
-                                justifyContent: "flex-start",
-                                alignItems: "center",
-                                width: '180px',
-                                fontSize: "17px",
-                                fontWeight: 'bold',
-                                marginBottom: '10px'
-                            }}>
-                                Xác nhận mật khẩu *
-                            </div>
-                            <input
-                                className = 'inputType'
-                                value = {this.state.pass2}
-                                onChange = {(event) => {
-                                    this.setState({
-                                        pass2: event.target.value
-                                    });
-                                }}
-                            ></input>
-                        </div>
                         <input className = 'submitBtn' type = 'submit' value = 'Đăng ký'></input>
                     </form>
                     <div style = {{
@@ -252,4 +224,4 @@ class Register extends Component {
     }
 }
 
-export default Register;
+export default withRouter(Register);

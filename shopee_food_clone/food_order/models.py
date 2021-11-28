@@ -78,6 +78,7 @@ class Customer(AbstractBaseUser):
     is_active = models.BooleanField(default = True)
     is_admin = models.BooleanField(default = False)
     is_superuser = models.BooleanField(default = False)
+    avatar = models.ImageField(upload_to="product-image/", blank=True)
     
     objects = MyUserManager()
     
@@ -152,3 +153,20 @@ class ShippingAddress(models.Model):
 
     def __str__(self):
         return str(self.id)
+    
+    
+class Voucher(models.Model):
+    code = models.CharField(max_length = 255, null = False, blank = False)
+    percentage = models.IntegerField()
+    quantity = models.IntegerField()
+    
+    def __str__(self):
+        return str(self.code)
+    
+    
+class CustomerVoucher(models.Model):
+    customer = models.ForeignKey(Customer, on_delete = models.CASCADE)
+    voucher = models.ForeignKey(Voucher, on_delete = models.CASCADE)
+    
+    def __str__(self):
+        return str(self.voucher.code)

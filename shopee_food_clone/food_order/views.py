@@ -10,6 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from django.contrib.auth.hashers import make_password
 
 from .serializers import *
 from .models import *
@@ -118,21 +119,13 @@ def checkout(request):
 # API function to register customer.
 @api_view(["POST"])
 def registerUserApi(request):
-    # Serialize POST request.
-    serializer = CustomerCreationSerializer(data=request.data)
-    # Save customer to database if valid.
-    if serializer.is_valid() and serializer.clean_password2():
-        form = CustomerCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            full_name = form.cleaned_data["full_name"]
-            phone_number = form.cleaned_data["phone_number"]
-            Customer.objects.create(
-                user=user, full_name=full_name, phone_number=phone_number
-            )
-        # Return JSON result.
+    serializer = CustomerCreationSerializer(data = request.data)
+    print(request.data)
+    if serializer.is_valid():
+        serializer.validated_data['password'] = make_password(serializer.validated_data['password'])
+        serializer.save()
         return Response({'msg':'Created'}, status=status.HTTP_201_CREATED)
-    # Return JSON errors.
+    print(serializer.errors)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -280,6 +273,7 @@ def checkoutApi(request):
     lattitude = data['lattitude']
     longitude = data['longitude']
     cast = data['cast']
+    voucher = data['voucher']
     # Get customer information
     customer = request.user
     # Update checkout status for order.
@@ -303,6 +297,13 @@ def checkoutApi(request):
         'order': orderSerializer.data,
         'items': orderDetailsSerializer.data
     }
+    
+    if voucher != None:
+        voucher = Voucher.objects.get(code = voucher)
+        voucher.quantity -= 1
+        voucher.save()
+        if voucher.quantity < 1:
+            voucher.delete()
     # Return JSON result.
     return Response(context, status = status.HTTP_200_OK)
 
@@ -385,6 +386,7 @@ class CustomerView(APIView):
     def post(self, request, format = None):
         password = request.data['password']
         instanceUser = request.user
+        print(request.data)
         serializer = CustomerSerializer(instanceUser, data = request.data)
         if serializer.is_valid():
             serializer.save()
@@ -491,3 +493,30 @@ class OrderUpdateView(APIView):
                 return Response(context, status = status.HTTP_200_OK)
             return Response({'msg': 'NOT FOUND'}, status = status.HTTP_400_BAD_REQUEST)
         return Response({'msg': 'not found'}, status = status.HTTP_400_BAD_REQUEST)
+    
+    
+class VoucherView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format = None):
+        voucherCode = request.query_params.get('code')
+        voucher = Voucher.objects.filter(code = voucherCode)
+        if len(voucher) > 0:
+            serializer = VoucherSerializer(voucher[0])
+            return Response(serializer.data, status = status.HTTP_200_OK)
+        return Response({'msg': 'Not found!'}, status = status.HTTP_400_BAD_REQUEST)
+    
+    
+class CustomerVoucherView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format = None):
+        user = request.user
+        cusVouchers = CustomerVoucher.objects.filter(customer = user)
+        if len(cusVouchers) > 0:
+            tmp = []
+            for voucher in cusVouchers:
+                tmp.append(voucher.voucher)
+            serializer = VoucherSerializer(tmp, many = True)
+            return Response(serializer.data, status = status.HTTP_200_OK)
+        return Response({'msg': 'Not found'}, status = status.HTTP_400_BAD_REQUEST)
